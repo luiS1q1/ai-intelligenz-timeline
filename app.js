@@ -39,7 +39,7 @@ function resize() {
 window.addEventListener("resize", resize);
 
 // ---- layout geometry
-const PADL = 54, PADR = 24, PADT = 34, PADB = 46;
+const PADL = 54, PADR = 24, PADT = 48, PADB = 46;
 const MAXSCORE = 62;
 function plotRect() { return {x: PADL, y: PADT, w: W - PADL - PADR, h: H - PADT - PADB}; }
 function tsToX(ts) {
@@ -140,8 +140,8 @@ function draw(now) {
     const occupied = [];
     for (const m of vis) {
       let text = m.n;
-      if (ctx.measureText(text).width > 120) {
-        while (text.length > 4 && ctx.measureText(text + "\u2026").width > 120) text = text.slice(0, -1);
+      if (ctx.measureText(text).width > 130) {
+        while (text.length > 4 && ctx.measureText(text + "\u2026").width > 130) text = text.slice(0, -1);
         text += "\u2026";
       }
       const tw = ctx.measureText(text).width;
@@ -211,6 +211,18 @@ function draw(now) {
   requestAnimationFrame(draw);
 }
 
+function modelAt(mx, my) {
+  const p = plotRect();
+  if (my < p.y - 14 || my > p.y + p.h) return null;
+  let best = null, bestD = 16;
+  for (const m of visibleModels()) {
+    const x = tsToX(m.ts);
+    const d = Math.abs(x - mx);
+    const yBar = p.y + p.h - m.s / MAXSCORE * p.h;
+    if (d < bestD && my > yBar - 12) { bestD = d; best = m; }
+  }
+  return best;
+}
 // ---- interaction
 let dragging = false, dragX = 0, dragV0 = 0, dragV1 = 0, moved = false;
 canvas.addEventListener("mousedown", e => {
@@ -230,16 +242,7 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
   const p = plotRect();
-  if (my < p.y || my > p.y + p.h) { tooltip.style.display = "none"; hoverM = null; return; }
-  // nearest bar
-  let best = null, bestD = 16;
-  for (const m of visibleModels()) {
-    const x = tsToX(m.ts);
-    const d = Math.abs(x - mx);
-    const yBar = p.y + p.h - m.s / MAXSCORE * p.h;
-    if (d < bestD && my > yBar - 10) { bestD = d; best = m; }
-  }
-  hoverM = best;
+  hoverM = modelAt(mx, my);
   if (best) {
     const col = COMP[best.c];
     tooltip.innerHTML = `<div class="tn">${best.n}</div><div class="tc" style="color:${col.color}">${col.name}</div>` +
@@ -258,7 +261,9 @@ canvas.addEventListener("mousemove", e => {
 canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; hoverM = null; });
 canvas.addEventListener("click", e => {
   if (moved) return;
-  if (hoverM) { pinnedM = hoverM; showDetail(hoverM); }
+  const r = canvas.getBoundingClientRect();
+  const m = modelAt(e.clientX - r.left, e.clientY - r.top);
+  if (m) { pinnedM = m; showDetail(m); }
   else { pinnedM = null; detailcard.classList.remove("open"); }
 });
 canvas.addEventListener("wheel", e => {
