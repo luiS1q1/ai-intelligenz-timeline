@@ -130,18 +130,37 @@ function draw(now) {
 
   // bars
   const vis = visibleModels().slice().sort((a, b) => a.ts - b.ts);
-  const barW = clamp((view1 - view0) / DAY * 0.0, 0, 0);
-  const w = clamp(Math.min(22, Math.max(1.5, (view1 - view0) / DAY * 0.0 + 0)), 0, 0); // placeholder
-  const bw = clamp(Math.max(2, Math.min(20, p.w / Math.max(vis.length, 1) * 0.45)), 2, 20);
-  const showLabels = vis.length <= 46 && bw >= 4;
+  const bw = clamp(Math.max(2, Math.min(16, p.w / Math.max(vis.length, 1) * 0.32)), 2, 16);
+  const showLabels = vis.length <= 40 && bw >= 3.5;
 
-  // greedy label stagger
-  const labelY = [];
-  vis.forEach(m => { m.labelDy = 0; });
+  // greedy label placement: try offsets above the bar, skip labels that would collide
+  vis.forEach(m => { m.labelDy = 0; m.labelText = m.n; });
   if (showLabels) {
     ctx.font = "600 10px Inter, sans-serif";
-    let lastEnd = -1e9, lastLevel = 0;
+    const occupied = [];
     for (const m of vis) {
+      let text = m.n;
+      if (ctx.measureText(text).width > 120) {
+        while (text.length > 4 && ctx.measureText(text + "\u2026").width > 120) text = text.slice(0, -1);
+        text += "\u2026";
+      }
+      const tw = ctx.measureText(text).width;
+      const x = tsToX(m.ts);
+      const barTop = baseline - m.s / MAXSCORE * p.h * ease;
+      let placed = false;
+      for (const dy of [0, -14, -28]) {
+        const rect = {x0: x - tw / 2 - 3, x1: x + tw / 2 + 3, y0: barTop - 8 + dy - 11, y1: barTop - 8 + dy};
+        if (!occupied.some(o => rect.x0 < o.x1 && rect.x1 > o.x0 && rect.y0 < o.y1 && rect.y1 > o.y0)) {
+          m.labelDy = dy; m.labelText = text; placed = true;
+          occupied.push(rect);
+          break;
+        }
+      }
+      if (!placed) m.labelText = null;
+    }
+  }
+
+  for (const m of vis) {
       const x = tsToX(m.ts);
       const y = baseline - m.s / MAXSCORE * p.h * ease - 8;
       if (x - lastEnd < 64) { m.labelDy = -(lastLevel + 1) * 13; }
@@ -189,12 +208,12 @@ function draw(now) {
       ctx.beginPath(); ctx.arc(x, y - 7, 2.2, 0, Math.PI * 2); ctx.fill();
     }
     // label
-    if (showLabels) {
+    if (showLabels && m.labelText) {
       ctx.font = (m.t === 1 ? "700" : "500") + " 10px Inter, sans-serif";
       ctx.fillStyle = m.t === 1 ? "#e8ecf4" : "#96a0b8";
       ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-      const ly = baseline - m.s / MAXSCORE * p.h * ease - 11 + m.labelDy;
-      ctx.fillText(m.n, x, ly);
+      const ly = baseline - m.s / MAXSCORE * p.h * ease - 8 + m.labelDy;
+      ctx.fillText(m.labelText, x, ly);
     }
     ctx.globalAlpha = 1;
   }
