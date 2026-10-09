@@ -128,3 +128,8 @@ footer {
 footer a { color:#9fb0ff; text-decoration:none; }
 footer a:hover { text-decoration:underline; }
 @media (max-width:900px){ .stats { display:none; } .titles p { display:none; } .searchwrap #search { width:150px; } .detailcard { width:250px; } .legend{ display:none; } }
+
+.trendtog { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8a93a8; cursor: pointer; white-space: nowrap; }
+.trendtog input { accent-color: #8b5cf6; cursor: pointer; }
+.leg-trend { color: #a78bfa; margin-left: 12px; }
+.leg-trend::before { content: ""; display: inline-block; width: 22px; height: 0; border-top: 2px dashed #a78bfa; margin-right: 6px; vertical-align: middle; }

@@ -6,7 +6,7 @@
 <title>KI-Intelligenz-Timeline 2020-2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header class="topbar">
@@ -42,6 +42,7 @@
   <div class="detailctl">
     <span class="lbl">Detailgrad</span>
     <input type="range" id="tierslider" min="0" max="5" step="1" value="0">
+    <label class="trendtog"><input type="checkbox" id="trendtoggle" checked><span>Trend&nbsp;+&nbsp;Prognose</span></label>
     <span class="val" id="tierval">Auto</span>
   </div>
 
@@ -55,6 +56,7 @@
   <div class="legend">
     <span class="leg-solid">gemessen (AA v4.3.2)</span>
     <span class="leg-est">≈ kalibrierte Schätzung</span>
+      <span class="leg-trend">Trend exponentiell / Prognose gestrichelt</span>
   </div>
 </main>
 
@@ -64,7 +66,7 @@
   <a href="https://benchlm.ai/benchmarks/artificialanalysis" target="_blank" rel="noopener">BenchLM</a> · ältere Werte von Fo auf eine gemeinsame Skala kalibriert (≈ = Schätzung) · gebaut von <a href="https://wajo.ai" target="_blank" rel="noopener">Fo</a>
 </footer>
 
-<script src="data.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="data.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

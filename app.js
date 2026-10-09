@@ -41,6 +41,32 @@ window.addEventListener("resize", resize);
 // ---- layout geometry
 const PADL = 54, PADR = 24, PADT = 48, PADB = 46;
 const MAXSCORE = 59;
+// ---- exponentieller Trend + Prognose (Fit auf die Bestmarke)
+const YEAR = 365.25 * DAY;
+let trendOn = true, trendFit = null;
+(function fitTrend() {
+  const pts = MODELS.slice().sort((a, b) => a.ts - b.ts);
+  let mx = 0; const fr = [];
+  for (const m of pts) { if (m.s > mx + 0.01) { mx = m.s; fr.push(m); } }
+  const nowTs = Date.now();
+  if (mx > 0) fr.push({ ts: nowTs, s: mx });
+  if (fr.length < 4) return;
+  let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const m of fr) {
+    const x = (m.ts - T0) / YEAR, y = Math.log(m.s);
+    n++; sx += x; sy += y; sxx += x * x; sxy += x * y;
+  }
+  const b = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+  const a = (sy - b * sx) / n;
+  const end = nowTs + 365 * DAY;
+  trendFit = { a, b, start: fr[0].ts, now: nowTs, end,
+    nowScore: Math.exp(a + b * (nowTs - T0) / YEAR),
+    endScore: Math.exp(a + b * (end - T0) / YEAR) };
+})();
+let YMAX = MAXSCORE;
+function viewMax() { return trendOn && trendFit ? T1 + 430 * DAY : T1; }
+function trendY(ts) { return Math.exp(trendFit.a + trendFit.b * (ts - T0) / YEAR); }
+setView(T0, viewMax());
 function plotRect() { return {x: PADL, y: PADT, w: W - PADL - PADR, h: H - PADT - PADB}; }
 function tsToX(ts) {
   const p = plotRect();
@@ -69,12 +95,14 @@ function draw(now) {
   ctx.clearRect(0, 0, W, H);
   const p = plotRect();
   const baseline = p.y + p.h;
+  YMAX = (trendOn && trendFit) ? Math.max(MAXSCORE, Math.ceil(trendFit.endScore * 1.05 / 10) * 10) : MAXSCORE;
 
   // horizontal score gridlines
   ctx.font = "10px 'JetBrains Mono', monospace";
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  for (let s = 0; s <= 60; s += 10) {
-    const y = baseline - s / MAXSCORE * p.h;
+  const gstep = YMAX > 60 ? 20 : 10;
+  for (let s = 0; s <= YMAX + 0.1; s += gstep) {
+    const y = baseline - s / YMAX * p.h;
     ctx.strokeStyle = s === 0 ? "#2a3454" : "#151c2e";
     ctx.beginPath(); ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); ctx.stroke();
     ctx.fillStyle = "#5a647c";
@@ -120,6 +148,34 @@ function draw(now) {
     else d = new Date(d.getTime() + DAY);
   }
 
+  // exponentieller Trend + Prognose
+  if (trendOn && trendFit) {
+    const tf = trendFit, n = 64;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(167,139,250,0.85)";
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const ts = tf.start + (tf.now - tf.start) * i / n;
+      const x = tsToX(ts), y = baseline - trendY(ts) / YMAX * p.h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = "rgba(167,139,250,0.5)";
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const ts = tf.now + (tf.end - tf.now) * i / n;
+      const x = tsToX(ts), y = baseline - trendY(ts) / YMAX * p.h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const ex = tsToX(tf.end), ey = baseline - trendY(tf.end) / YMAX * p.h;
+    ctx.fillStyle = "rgba(167,139,250,0.95)";
+    ctx.font = "600 10px Inter, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    ctx.fillText("Prognose \u2248 " + Math.round(trendY(tf.end)), Math.min(ex, p.x + p.w - 6), ey - 5);
+  }
+
   // "today" marker
   const nowX = tsToX(Date.now());
   if (nowX >= p.x && nowX <= p.x + p.w) {
@@ -146,7 +202,7 @@ function draw(now) {
       }
       const tw = ctx.measureText(text).width;
       const x = tsToX(m.ts);
-      const barTop = baseline - m.s / MAXSCORE * p.h * ease;
+      const barTop = baseline - m.s / YMAX * p.h * ease;
       let placed = false;
       for (const dy of [0, -14, -28]) {
         const rect = {x0: x - tw / 2 - 3, x1: x + tw / 2 + 3, y0: barTop - 8 + dy - 11, y1: barTop - 8 + dy};
@@ -163,7 +219,7 @@ function draw(now) {
   for (const m of vis) {
     const x = tsToX(m.ts);
     const col = COMP[m.c].color;
-    const h = Math.max(0, m.s / MAXSCORE * p.h * ease);
+    const h = Math.max(0, m.s / YMAX * p.h * ease);
     if (h < 1) continue;
     const y = baseline - h;
     const hovered = m === hoverM || m === pinnedM;
@@ -203,7 +259,7 @@ function draw(now) {
       ctx.font = (m.t === 1 ? "700" : "500") + " 10px Inter, sans-serif";
       ctx.fillStyle = m.t === 1 ? "#e8ecf4" : "#96a0b8";
       ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-      const ly = baseline - m.s / MAXSCORE * p.h * ease - 8 + m.labelDy;
+      const ly = baseline - m.s / YMAX * p.h * ease - 8 + m.labelDy;
       ctx.fillText(m.labelText, x, ly);
     }
     ctx.globalAlpha = 1;
@@ -218,7 +274,7 @@ function modelAt(mx, my) {
   for (const m of visibleModels()) {
     const x = tsToX(m.ts);
     const d = Math.abs(x - mx);
-    const yBar = p.y + p.h - m.s / MAXSCORE * p.h;
+    const yBar = p.y + p.h - m.s / YMAX * p.h;
     if (d < bestD && my > yBar - 12) { bestD = d; best = m; }
   }
   return best;
@@ -277,17 +333,17 @@ canvas.addEventListener("wheel", e => {
 
 function zoomAround(ts, f) {
   const span = (view1 - view0) * f;
-  const minSpan = 10 * DAY, maxSpan = (T1 - T0) * 1.02;
+  const minSpan = 10 * DAY, maxSpan = (viewMax() - T0) * 1.02;
   const s = clamp(span, minSpan, maxSpan);
   const frac = (ts - view0) / (view1 - view0);
   let v0 = ts - frac * s, v1 = v0 + s;
   if (v0 < T0 - 30*DAY) { v0 = T0 - 30*DAY; v1 = v0 + s; }
-  if (v1 > T1 + 30*DAY) { v1 = T1 + 30*DAY; v0 = v1 - s; }
+  if (v1 > viewMax() + 30*DAY) { v1 = viewMax() + 30*DAY; v0 = v1 - s; }
   setView(v0, v1);
 }
 function setView(v0, v1) {
-  const s = clamp(v1 - v0, 10 * DAY, (T1 - T0) * 1.02);
-  v0 = clamp(v0, T0 - 30*DAY, T1 - s + 30*DAY);
+  const s = clamp(v1 - v0, 10 * DAY, (viewMax() - T0) * 1.02);
+  v0 = clamp(v0, T0 - 30*DAY, viewMax() - s + 30*DAY);
   target = {v0, v1: v0 + s};
 }
 // touch pinch
@@ -312,13 +368,13 @@ canvas.addEventListener("touchend", () => { touches = {}; });
 // buttons
 document.getElementById("zin").onclick = () => zoomAround((view0 + view1) / 2, 0.6);
 document.getElementById("zout").onclick = () => zoomAround((view0 + view1) / 2, 1 / 0.6);
-document.getElementById("zfit").onclick = () => setView(T0, T1);
+document.getElementById("zfit").onclick = () => setView(T0, viewMax());
 document.getElementById("znow").onclick = () => { const s = 180 * DAY; setView(Date.now() - s, Date.now() + 10 * DAY); };
 window.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
   if (e.key === "+" || e.key === "=") zoomAround((view0 + view1) / 2, 0.6);
   if (e.key === "-") zoomAround((view0 + view1) / 2, 1 / 0.6);
-  if (e.key === "0") setView(T0, T1);
+  if (e.key === "0") setView(T0, viewMax());
   if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
     const s = view1 - view0, dts = s * 0.2 * (e.key === "ArrowRight" ? 1 : -1);
     setView(view0 + dts, view1 + dts);
@@ -327,6 +383,7 @@ window.addEventListener("keydown", e => {
 
 // detail slider
 const slider = document.getElementById("tierslider");
+document.getElementById("trendtoggle").onchange = e => { trendOn = e.target.checked; setView(view0, Math.max(view1, trendOn ? Date.now() + 40 * DAY : T1)); };
 const tierval = document.getElementById("tierval");
 slider.addEventListener("input", () => {
   tierMode = parseInt(slider.value, 10);
