@@ -161,15 +161,6 @@ function draw(now) {
   }
 
   for (const m of vis) {
-      const x = tsToX(m.ts);
-      const y = baseline - m.s / MAXSCORE * p.h * ease - 8;
-      if (x - lastEnd < 64) { m.labelDy = -(lastLevel + 1) * 13; }
-      else { m.labelDy = 0; lastLevel = 0; }
-      lastEnd = x + 60; lastLevel = m.labelDy ? lastLevel + 1 : 0;
-    }
-  }
-
-  for (const m of vis) {
     const x = tsToX(m.ts);
     const col = COMP[m.c].color;
     const h = m.s / MAXSCORE * p.h * ease;
