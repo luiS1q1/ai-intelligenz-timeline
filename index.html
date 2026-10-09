@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KI-Intelligenz-Timeline 2020-2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div class="titles">
+      <h1>Intelligenz-Rennen der KI</h1>
+      <p>Modell-Releases 2020 bis heute, Höhe der Säule = Intelligenz-Index</p>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="searchwrap">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="search" type="text" placeholder="Modell suchen…" autocomplete="off" spellcheck="false">
+    <div class="searchresults" id="searchresults"></div>
+  </div>
+</header>
+
+<div class="chipbar" id="chipbar"></div>
+
+<main class="stage">
+  <canvas id="tl"></canvas>
+
+  <div class="controls">
+    <button id="zin" title="Hineinzoomen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg></button>
+    <button id="zout" title="Herauszoomen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg></button>
+    <button id="zfit" title="Alles zeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+    <button id="znow" title="Springe zu heute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M4.9 4.9l2.9 2.9m8.4 8.4 2.9 2.9M2 12h4m12 0h4M4.9 19.1l2.9-2.9m8.4-8.4 2.9-2.9"/></svg></button>
+  </div>
+
+  <div class="detailctl">
+    <span class="lbl">Detailgrad</span>
+    <input type="range" id="tierslider" min="0" max="5" step="1" value="0">
+    <span class="val" id="tierval">Auto</span>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <div class="detailcard" id="detailcard">
+    <button class="close" id="closecard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div id="detailbody"></div>
+  </div>
+
+  <div class="legend">
+    <span class="leg-solid">gemessen (Artificial Analysis)</span>
+    <span class="leg-est">≈ kalibrierte Schätzung</span>
+  </div>
+</main>
+
+<footer>
+  Daten: <a href="https://artificialanalysis.ai" target="_blank" rel="noopener">Artificial Analysis Intelligence Index</a>,
+  <a href="https://aireleasetracker.com" target="_blank" rel="noopener">AI Release Tracker</a>,
+  <a href="https://benchlm.ai/benchmarks/artificialanalysis" target="_blank" rel="noopener">BenchLM</a> · ältere Werte von Fo auf eine gemeinsame Skala kalibriert (≈ = Schätzung) · gebaut von <a href="https://wajo.ai" target="_blank" rel="noopener">Fo</a>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
