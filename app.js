@@ -40,7 +40,7 @@ window.addEventListener("resize", resize);
 
 // ---- layout geometry
 const PADL = 54, PADR = 24, PADT = 48, PADB = 46;
-const MAXSCORE = 62;
+const MAXSCORE = 59;
 function plotRect() { return {x: PADL, y: PADT, w: W - PADL - PADR, h: H - PADT - PADB}; }
 function tsToX(ts) {
   const p = plotRect();
@@ -163,7 +163,7 @@ function draw(now) {
   for (const m of vis) {
     const x = tsToX(m.ts);
     const col = COMP[m.c].color;
-    const h = m.s / MAXSCORE * p.h * ease;
+    const h = Math.max(0, m.s / MAXSCORE * p.h * ease);
     if (h < 1) continue;
     const y = baseline - h;
     const hovered = m === hoverM || m === pinnedM;
@@ -247,7 +247,7 @@ canvas.addEventListener("mousemove", e => {
     const col = COMP[best.c];
     tooltip.innerHTML = `<div class="tn">${best.n}</div><div class="tc" style="color:${col.color}">${col.name}</div>` +
       `<div class="ts">Index: <b>${best.s}</b> &middot; ${new Date(best.ts).toLocaleDateString("de-DE", {day:"numeric", month:"long", year:"numeric"})}</div>` +
-      (best.est ? `<div class="te">≈ kalibrierte Schätzung</div>` : `<div class="te" style="color:#34d399">AA-gemessen</div>`);
+      (best.src === "aa" && !best.est ? `<div class="te" style="color:#34d399">AA-gemessen (v4.3.2)</div>` : best.src === "aa" ? `<div class="te" style="color:#facc15">von AA hochgerechnet</div>` : `<div class="te">≈ von Fo kalibriert</div>`);
     tooltip.style.display = "block";
     const tw = 250;
     tooltip.style.left = clamp(mx + 16, 8, W - tw - 8) + "px";
@@ -341,7 +341,7 @@ function showDetail(m) {
     `<div class="dc-name">${m.n}</div>` +
     `<div class="dc-date">${new Date(m.ts).toLocaleDateString("de-DE", {weekday:"long", day:"numeric", month:"long", year:"numeric"})}</div>` +
     `<div class="dc-score" style="color:${col.color}">${m.s}</div>` +
-    `<div class="dc-src">Intelligenz-Index &middot; <span class="${m.est ? "est" : "aa"}">${m.est ? "≈ kalibrierte Schätzung von Fo" : "von Artificial Analysis gemessen"}</span></div>` +
+    `<div class="dc-src">Intelligenz-Index &middot; <span class="${m.est ? "est" : "aa"}">${m.src === "aa" && !m.est ? "von Artificial Analysis gemessen (v4.3.2)" : m.src === "aa" ? "von Artificial Analysis hochgerechnet" : "≈ kalibrierte Schätzung von Fo"}</span></div>` +
     (m.note ? `<div class="dc-note">${m.note}</div>` : "") +
     `<div class="dc-tier">${TIER_NAMES[m.t]}</div>`;
   detailcard.classList.add("open");
